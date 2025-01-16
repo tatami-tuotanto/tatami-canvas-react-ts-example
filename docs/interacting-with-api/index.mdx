@@ -1,0 +1,96 @@
+---
+title: Interacting with API
+description: Getting into Tatami JS API
+---
+
+## Interacting with API
+
+Let me tell you a secret and you probably guess already. These Tatami commands are actually interacting with Tatami JS API, 
+which is interacting with the actual WebAssembly engine. We built commands layer mainly for having easier integration between UI elements 
+and the graphics engine. Also one Tatami command may use several methods from Tatami API.
+
+You could get far by just triggering commands and listening to messages, but in order to build top-level application logic you might need 
+something more and Tatami JS API is just that.
+
+When Tatami boots up it will create a Tatami Class which lives inside the browser's window object.
+
+To access tatami directly from window, now type this into your console
+```javascript
+tatami
+```
+
+You should get output like
+
+```javascript
+Tatami {
+  api,
+  events,
+  sendCommand,
+  state,
+  utils
+}
+```
+
+You will find list of all API methods under `tatami.api` and documentation for every method are listed in this section of the docs.
+
+
+## Tatami API Example Usage
+
+Now let's get list of layers.
+
+```javascript
+const layers = tatami.api.getLayers()
+```
+
+That should give you output like this:
+
+```javascript
+[
+  0: {
+    active: true,
+    deleted: false,
+    height: 1024,
+    id: 1,
+    locked: false,
+    matrix: [1024, 0, 0, 1024, 0, 0],
+    mode: "normal",
+    name: "Layer 1",
+    opacity: 1,
+    transformed: false,
+    transformed_angle: 0,
+    transformed_height: 1024,
+    transformed_width: 1024,
+    type: "raster",
+    visible: true,
+    width: 1024
+  }
+]
+
+```
+
+Now let's say you would like to change opacity of that layer. You have couple of ways to do that, let's go over them now.
+
+1. You can use command and set it with `commands.run("layer-opacity:50")`.
+
+2. or you could add attribute `tatami="layer-opacity"` to some input element.
+
+3. You can use `setLayers()` method from JS API (which can modify also some other props of that layer at the same time).
+
+
+
+Here is how you would update the opacity with Tatami API.
+
+```javascript
+// Let's get all the layers
+let newLayers = tatami.api.getLayers()
+// Find the currently selected one
+const currentLayer = newLayers.find(l => l.active)
+// Update opacity value
+currentLayer.opacity = 0.5
+// Set the values
+tatami.api.setLayers(newLayers)
+```
+
+PS. You don't have to send entire JSON of the layers, you can send only the changes and Tatami will take care of it.
+
+More examples can be found from documentation of the methods in following chapters.

@@ -1,0 +1,1661 @@
+---
+title: Methods
+description: Tatami API Methods
+---
+
+The Code Block in this documentation allows you to display code snippets with optional line numbering and line highlighting.
+
+## General
+
+### sendCommand
+
+The main function that binds JavaScript side and C++/WebAssembly side is `tatami.sendCommand()`. Nearly every API function uses 
+it for sending instructions to WebAssembly engine. These API methods are basically just more human readable wrappers for those 
+sendCommands.
+
+
+
+## Canvas
+
+
+### setCanvasSize
+
+By "canvas" we are referring to size of the document, or the paper which you can draw on. setCanvasSize 
+sets size of the canvas into given dimensions.
+
+| Param    | Description                                 |
+|----------|---------------------------------------------|
+| width    | Canvas width (px) 
+| height   | Canvas height (px)
+
+```javascript
+tatami.api.setCanvasSize(1920, 1080)
+```
+
+
+### setViewport
+
+By "viewport" we are referring to area which is around the paper/canvas, which is the actual HTML canvas element in the DOM.
+
+| Param      | Description                                 |
+|------------|---------------------------------------------|
+| width      | Viewport width (px) 
+| height     | Viewport height (px)
+
+```javascript
+tatami.api.setViewport(window.innerWidth, window.innerHeight)
+```
+
+
+### resizeCanvas
+
+Resizes canvas into given dimensions
+
+| Param      | Description                                 |
+|------------|---------------------------------------------|
+| width      | Canvas width (px) 
+| height     | Canvas height (px)
+
+```javascript
+tatami.api.resizeCanvas(window.innerWidth, window.innerHeight)
+```
+
+
+### centerCanvas
+
+Pans canvas into center point of the viewport
+
+```javascript
+tatami.api.centerCanvas()
+```
+
+
+### resetCanvasTransform
+
+Resets transformed size, position and angle of the canvas back to zero.
+
+```javascript
+tatami.api.resetCanvasTransform()
+```
+
+
+### undo
+
+```javascript
+tatami.api.redo()
+```
+
+
+### redo
+
+```javascript
+tatami.api.redo()
+```
+
+
+### setShiftPressed
+
+Let's Tatami know if Shift key is being pressed.
+
+| Param   | Description                                   |
+|---------|-----------------------------------------------|
+| boolean | Is Shift key being pressed, `true` or `false` | 
+
+```javascript
+window.addEventListener('keydown', e => {
+    if (e.shiftKey) tatami.api.setShiftPressed(true)
+})
+window.addEventListener('keyup', e => {
+    tatami.api.setShiftPressed(false)
+})
+```
+
+
+### getProjectData
+
+Promise that returns project data in lzma compressed binary file. Returns object with blob and base64.
+
+<Note type="warning" title="Warning">
+  Drawing performance is impacted during this operation. As data needs to be copied from GPU to CPU it blocks drawing.
+</Note>
+
+```javascript
+const projectData = await tatami.api.getProjectData()
+const { blob, base64 } = projectData
+```
+
+
+### getUncompressedProjectData
+
+Promise that returns project data in raw binary file. Returns object with  blob and base64. 
+
+Uncompressed project file is larger in size but downloads faster. In Sumopaint we use uncompressed data for 
+auto-backup feature as then speed matters more than size.
+
+<Note type="warning" title="Warning">
+  Drawing performance is impacted during this operation. As data needs to be copied from GPU to CPU it blocks drawing.
+</Note>
+
+```javascript
+const projectData = await tatami.api.getUncompressedProjectData()
+const { blob, base64 } = projectData
+```
+
+
+### setAutoRotateSpeed
+
+Starts rotating canvas at given speed (degress per minute)
+
+| Param  | Description                                 |
+|--------|---------------------------------------------|
+| speed  | Rotation speed in revolutions per second
+
+```javascript
+tatami.api.setAutoRotateSpeed(45)
+```
+
+
+### flipCanvasX
+
+Flips canvas horizontally
+
+```javascript
+tatami.api.flipCanvasX()
+```
+
+
+### flipCanvasY
+
+Flips canvas vertically
+
+```javascript
+tatami.api.flipCanvasX()
+```
+
+
+### zoom
+
+Sets zoom level
+
+| Param  | Description                                 |
+|--------|---------------------------------------------|
+| zoom   | Zoom factor (1 = initial zoom level)
+| x      | Set anchor point for X axis
+| y      | Set anchor point for Y axis
+
+```javascript
+const centerX = window.innerWidth / 2
+const centerY = window.innerHeight / 2
+tatami.api.zoom(2, centerX, centerY)
+```
+
+
+### getCanvasTransform
+
+Returns an object with all the values related to current canvas setAutoRotateSpeed
+
+```javascript
+tatami.api.getCanvasTransform()
+```
+
+Example output
+
+```JSON
+{
+    drawing: {
+        // Position of canvas insize the viewport
+        canvas_rect: [372,304,779,711],
+        // Is there a Coloring guide?
+        hasGuide: false,
+        // Is there a mask?
+        hasOverlay: false,
+        // Original height
+        oheight: 1024,
+        // Current height (may be transformed)
+        height: 1024,
+        // Original width
+        owidth: 1024,
+        // Current width (may be transformed)
+        width: 1024
+    },
+    scale: 0.4, // Current scale (setZoom affects this)
+    x: 372, // Canvas X position in viewport (top left corner)
+    y: 304 // Canvas Y position in viewport (top left corner)
+}
+```
+
+
+### getInfoAt
+
+Returns an object with all the values related to the pixel of given coordinates
+
+| Option  | Description                                 |
+|---------|---------------------------------------------|
+| x       | X coordinate (screen space)
+| y       | Y coordinate (screen space)
+
+```javascript
+tatami.api.getInfoAt({ x: 300, y: 300 })
+```
+
+Example output
+
+```JSON
+{
+    // Screen coordinates where information was requested from
+    // For example using e.pageX and e.pageY
+    canvas: {
+        x: 300,
+        y: 300
+    },
+    // Which color was found there (white)
+    // Color format is (R, G, B, Alpha) 
+    // where each value is between 0..1
+    color: [1,1,1,1],
+    // Document space coordinates of that screen space coordinate.
+    content: {
+        x: 163,
+        y: 249
+    },
+    // If there was some hit targets in that place we would know it here.
+    // Hit targets are things like: resize handle or edge of a vector shape.
+    hit: {
+        label: none
+    },
+    // Which layer ID can be found in that coordinate
+    onlayer: 1,
+    // Considering layer transparency, is any other layer ID visible there
+    onlayer_noalpha: 1
+}
+```
+
+
+### getColorAt
+
+Just like `getInfoAt` but only return the color which can be found in the given coordinates.
+
+| Option  | Description                                 |
+|---------|---------------------------------------------|
+| x       | X coordinate (screen space)
+| y       | Y coordinate (screen space)
+
+```javascript
+tatami.api.getColorAt({ x: 300, y: 300 })
+```
+
+Example output
+
+```JSON
+{
+    color: [0.8, 0.5, 0.2, 1]
+}
+```
+
+
+### saveCurrentImage
+
+Returns image of the current canvas as a blob
+
+| Param  | Type   | Default | Options        |
+|--------|--------|---------|----------------|
+| format | string | jpg     | `jpg` or `png` |
+
+```javascript
+const shareImage = await tatami.api.saveCurrentImage('png')
+```
+
+
+### saveCurrentThumbnail
+
+Return thumbnail image of the current canvas as JPG blob
+
+```javascript
+const thumbnail = await tatami.api.saveCurrentThumbnail()
+```
+
+
+## Brush
+
+
+### getBrushPreview
+
+Returns preview images as blob and base64 of a simulated stroke with current brush settings.
+
+| Option      | Type | Description                                 |
+|-------------|------|---------------------------------------------|
+| brushSize   | int  | Size of the brush in preview image          |
+| imageWidth  | int  | Width of image thumbnail                    |
+| imageHeight | int  | Height of image thumbnail                   |
+
+```javascript
+const brushPreview = await tatami.api.getBrushPreview({
+    brushSize: 100,
+    imageWidth: 150,
+    imageHeight: 30,
+})
+const { blob, base64 } = brushPreview
+```
+
+
+### getBrushPackage
+
+Returns compressed binary of all the current brush settings as blob and base64.
+
+```javascript
+const brushPackage = await tatami.api.getBrushPackage()
+const { blob, base64 } = brushPackage
+```
+
+
+### setTouchAttributes
+
+Set touch force, altitue angle and azimuth angle for the drawing engine.
+
+<Note type="warning" title="Warning">
+  This method is used internally by the pointer events whenever you draw. If you decide to overwrite this method it may 
+  have undesired effects for the drawing performance and quality.
+</Note>
+
+| Param          | Type  | Default | Range   |
+|----------------|-------|---------|---------|
+| force          | float | 0.5     | 0..1    |
+| altitude angle | int   | 0       | -90..90 |
+| azimuth angle  | int   | 0       | -90..90 |
+
+```javascript
+const penMoveHandler = (e) => {
+    if (e.type === 'pointermove' && e.pointerType === 'pen') {
+        tatamiApi.setTouchAttributes(e.pressure, e.tiltX, e.tiltY)
+    }
+}
+```
+
+
+### pointerStart
+
+Instructs Tatami drawing engine to start a stroke. This is used by Tatami's `pointerdown` handler.
+
+<Note>
+  Purpose of exposing this method is to allow you perform drawing programmatically. To see such example check Examples section.
+</Note>
+
+| Param | Type  | Description   |
+|-------|-------|---------------|
+| mode  | int   | Mode number (required). 0 = paint, 1 = pan, 2 = move
+| x     | int   | -90..90 |
+| y     | int   | -90..90 |
+
+```javascript
+tatamiApi.pointerStart(0, 100, 100)
+```
+
+
+### pointerMove
+
+Instructs Tatami drawing engine to move brush tip. This is used by Tatami's `pointermove` handler.
+
+<Note>
+  Purpose of exposing this method is to allow you perform drawing programmatically. To see such example check Examples section.
+</Note>
+
+| Param | Type  | Description   |
+|-------|-------|---------------|
+| mode  | int   | Mode number (required). 0 = paint, 1 = pan, 2 = move
+| x     | int   | -90..90 |
+| y     | int   | -90..90 |
+
+```javascript
+tatamiApi.pointerMove(0, 100, 100)
+```
+
+
+### pointerEnd
+
+Instructs Tatami drawing engine to end a stroke. This is used by Tatami's `pointerup` handler.
+
+<Note>
+  Purpose of exposing this method is to allow you perform drawing programmatically. To see such example check Examples section.
+</Note>
+
+| Param | Type  | Description   |
+|-------|-------|---------------|
+| mode  | int   | Mode number (required). 0 = paint, 1 = pan, 2 = move
+| x     | int   | -90..90 |
+| y     | int   | -90..90 |
+
+```javascript
+tatamiApi.pointerEnd(0, 100, 100)
+```
+
+
+### setBrushTexture
+
+Assigns image to current brush
+
+When we want to set image for brush first we need to upload it into Tatami's internal storage 
+and then we can assign it to the brush.
+
+Normal brush in Tatami is basically clone stamping brush tip images. That's using attribute `sampler2d`.
+
+Tatami's texture brush acts as if revealing some tileable seamless pattern. For that we have `staticmul` attribute.
+
+| Param        | Type   | Options                             |
+|--------------|--------|-------------------------------------|
+| attribute    | string | `sampler2d` or `staticmul`          |
+| storage path | string | Location of image in Tatami storage |
+
+```javascript
+tatami.api.setBrushTexture('staticmul', `tatami/tips/pool.png`)
+```
+
+
+### getBrushInfo
+
+Returns an object showing current brush information
+
+```javascript
+tatami.api.getBrushInfo()
+```
+
+
+### setBrushInfo
+
+Updates brush from given object (use `getBrushInfo` to see what kind of data it has)
+
+```javascript
+tatami.api.setBrushInfo(json)
+```
+
+
+### updateBrush
+
+Helper function for using `setBrushInfo`. 
+
+| Option  | Description                                              |
+----------|-----------------------------------------------------------
+| section | Brush info section where the prop is found (eg. "basic") |
+| prop    | Prop to update (eg. "size_px")                           |
+| value   | Value for prop                                           |
+
+```javascript
+tatami.api.updateBrush({ section: 'basics', prop: 'size_px', value: 100 })
+```
+
+
+### setColor
+
+Sets color for the currently selected brush.
+
+| Param | Description
+--------|------------------------------
+| color | Various color code formats
+
+#### Color codes you can use
+
+- `{ r, g, b }` where values are within `0..255` range
+- `[r,g,b]` where color values are within `0..1` range (Tatami internal format)
+- `[r,g,b]` where color values are within `0..255` range (Tatami internal format)
+- `#rrbbgg` standard web color format in hex
+- `rgb(r, g, b)` where values are within `0..255` range
+- `rgb(r, g, b, a)` where values are within `0..255` range
+
+
+```javascript
+tatami.api.setColor({ r: 0, g: 255, b: 255 })
+
+tatami.api.setColor([0, 255, 255])
+
+tatami.api.setColor([0, 1, 1])
+
+tatami.api.setColor('#00ffff')
+
+tatami.api.setColor('rgb(0, 255, 255)')
+
+tatami.api.setColor('rgba(0,255,255,255)')
+
+```
+
+
+### getCurrentColor
+
+Get current drawing color as hex
+
+```javascript
+tatami.api.getCurrentColor()
+```
+
+
+### getFullBrushInfo
+
+Returns an object showing all the information of current brush, including shaders and list of images used.
+
+```javascript
+tatami.api.getFullBrushInfo()
+```
+
+
+### setSymmetry 
+
+This method manages Symmetry drawing assistant. 
+To turn off this drawing assistant set amount of points to zero.
+
+| Param     | Type | Options                             |
+|-----------|------|-------------------------------------|
+| points    | int  | Amount of symmetry points (3-18)    |
+
+```javascript
+tatami.api.setSymmetry(9)
+```
+
+
+### setGravity 
+
+This method manages Gravity drawing assistant. When rope length is zero brush tip acts as if it was a small body and pen is 
+like a larger body which brush tip is orbiting. If rope length is added then it behaves as if brush tip would was a pendulum, hanging from pen.
+
+
+| Param      | Type    | Options                             |
+|------------|---------|-------------------------------------|
+| enabled    | boolean | Is gravity turned on                |
+| friction   | int     | Value range 1..99
+| aim        | int     | Value range 1..99
+| ropeLength | int     | Value range 0..99
+
+```javascript
+tatami.api.setSymmetry(9)
+```
+
+
+### setPerspective 
+
+This method manages Perspective drawing assistant.
+To turn off this drawing assistant set amount of points to zero.
+
+| Param     | Type | Options                             |
+|-----------|------|-------------------------------------|
+| points    | int  | Amount of symmetry points (2-4)     |
+
+```javascript
+tatami.api.setPerspective(3)
+```
+
+
+### setStabilizer
+
+This method manages stabilizer drawing assistant which is also known as "Live Stroke" assistant in Sumopaint. 
+When turned on brush stroke will be smoothed and corner handles appear on the path. When handles are visible we can tweak 
+any brush options and see how the change affects brush stroke in realtime. For example you can adjust brush size and see 
+stroke being refreshed as if it was drawn with that updated brush size.
+
+
+| Param      | Type    | Options                             |
+|------------|---------|-------------------------------------|
+| enabled    | boolean | Is Stabilizer turned on             |
+| strength   | float   | How much to stabilize (0..1)
+
+```javascript
+tatami.api.setStabilizer(true, 0.1)
+```
+
+
+### setBrushSize
+
+Set size of current brush.
+
+| Param   | Type | Options                             |
+|---------|------|-------------------------------------|
+| size    | int  | Brush size in pixels                |
+
+```javascript
+tatami.api.setBrushSize(60)
+```
+
+
+### setBrushPressure
+
+Set pressure of current brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Brush pressure (0..1)               |
+
+```javascript
+tatami.api.setBrushPressure(0.9)
+```
+
+
+### setBrushSpacing
+
+Set spacing of current brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Brush spacing (0..2)                |
+
+```javascript
+tatami.api.setBrushSpacing(1.2)
+```
+
+
+### setBrushOpacity
+
+Set opacity of current brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Brush opacity (0..1)                |
+
+```javascript
+tatami.api.setBrushOpacity(0.8)
+```
+
+
+### setBrushDynamics
+
+Set dynamics of current brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Brush dynamics (-1..1)              |
+
+```javascript
+tatami.api.setBrushSpacing(60)
+```
+
+
+### setBrushDynamicsScale
+
+Set dynamics scale of current brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Brush dynamics scale (0..1)         |
+
+```javascript
+tatami.api.setBrushDynamicsScale(0.5)
+```
+
+
+### setBrushFadeIn
+
+Set fade-in value of current brush
+
+| Param   | Type  | Options                                    |
+|---------|-------|--------------------------------------------|
+| value   | int   | How many pixels fade-in when stroke begins |
+
+```javascript
+tatami.api.setBrushFadeIn(200)
+```
+
+
+### setBrushFadeOut
+
+Set fade-out value of current brush
+
+| Param   | Type  | Options                                    |
+|---------|-------|--------------------------------------------|
+| value   | int   | How many pixels fade-out when stroke ends  |
+
+```javascript
+tatami.api.setBrushFadeOut(200)
+```
+
+
+### setBrushInkFade
+
+How long it takes until it "runs out of ink"
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Ink fading (0..1)                   |
+
+```javascript
+tatami.api.setBrushInkFade(0.3)
+```
+
+
+### setBrushRotate
+
+Set rotation of current brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Brush rotation (0..1)               |
+
+```javascript
+tatami.api.setBrushRotate(0.3)
+```
+
+
+### setBrushAngleRandom
+
+Set brush tips angle randomizer of current Brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Randomizer value (0..1)             |
+
+```javascript
+tatami.api.setBrushAngleRandom(0.9)
+```
+
+
+### setBrushColorRandom
+
+Set color randomizer of current Brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Randomizer value (0..1)             |
+
+```javascript
+tatami.api.setBrushColorRandom(0.4)
+```
+
+
+### setBrushScaleRandom
+
+Set brush size randomizer of current Brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Randomizer value (0..1)             |
+
+```javascript
+tatami.api.setBrushScaleRandom(0.3)
+```
+
+
+### setBrushJitter
+
+Set spacing of current Brush
+
+| Param   | Type  | Options                             |
+|---------|-------|-------------------------------------|
+| value   | float | Jitter value (0..1)                 |
+
+```javascript
+tatami.api.setBrushJitter(0.25)
+```
+
+
+## Color Adjustments
+
+Color Adjustments provide non-destructive color adjustment mode for a layer. To activate color adjustment mode 
+we call `startAdjusting`. Adjustment parameters update will affect the layer until `endAdjusting` is called and 
+adjustments will be burned into the layer image.
+
+### startAdjusting
+
+Activates color adjustment mode for the currently selected layer.
+
+```javascript
+tatami.api.startAdjusting()
+```
+
+
+### endAdjusting
+
+Deactivates color adjustment mode and burns adjustments into the layer image.
+
+```javascript
+tatami.api.endAdjusting()
+```
+
+
+
+### getAdjustments
+
+Returns object of the current color adjustments
+
+```javascript
+tatami.api.getAdjustments()
+```
+
+Output looks like this
+
+
+```JSON
+{
+    targets: {
+        all: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        blues:{ 
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        cyans: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        desaturated: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        greens: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        highlights: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        magentas: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        midtones: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        reds: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        saturated: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        shadows: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        },
+        yellows: {
+            b:0,brightness:0,contrast:0,exposure:0,g:0,hue:0,r:0,saturation:0,temperature:0,tint:0,vibrance:0
+        }
+    },
+    vignette_hardness: 0.1,
+    vignette_opacity: 0,
+    vignette_pos: [0.5,0.5],
+    vignette_r:0
+}
+```
+
+
+### setAdjustments
+
+Updates color adjustments from given JSON. All values are float values within `-1..1` range 
+
+```javascript
+let adjustments = tatami.api.getAdjustments()
+adjustments.targets.all.temperature = 0.3
+tatami.api.setAdjustments(adjustments)
+```
+
+
+## Clipboard
+
+Tatami has it's own clipboard. These methods won't interact with OS level clipboard. 
+To enable copying and pasting from-to OS level clipboard one must write implementation in 
+conjunction with browser's Clipboard API and Tatami's layer import and export methods.
+
+### cut
+
+| Param  | Type  | Options                             |
+|--------|-------|-------------------------------------|
+| id     | int   | layer id                            |
+
+```javascript
+tatami.api.cut(1)
+```
+
+
+### copy
+
+```javascript
+tatami.api.copy()
+```
+
+
+### copyLayer
+
+| Param  | Type  | Options                             |
+|--------|-------|-------------------------------------|
+| id     | int   | layer id                            |
+
+```javascript
+tatami.api.copyLayer(1)
+```
+
+
+### paste
+
+```javascript
+tatami.api.paste()
+```
+
+
+### getClipboardImage
+
+Returns image from Tatami's internal clipboard as blob and base64.
+
+In order this to return something you must first copy something to clipboard with `tatami.api.copy()`
+
+```javascript
+const clipboardImage = await tatami.api.getClipboardImage()
+const { blob, base64 } = clipboardImage
+```
+
+
+## Layer
+
+
+### getLayers
+
+Returns object of all layers
+
+```javascript
+const layers = tatami.api.getLayers()
+```
+
+
+### setLayers
+
+Updates layers from given JSON
+
+```javascript
+// Let's get all the layers
+let newLayers = tatami.api.getLayers()
+// Find the currently selected one
+const currentLayer = newLayers.find(l => l.active)
+// Update opacity value
+currentLayer.opacity = 0.5
+// Set the values
+tatami.api.setLayers(newLayers)
+```
+
+
+### selectLayer
+
+Select layer by id
+
+| Param  | Type  | Options                             |
+|--------|-------|-------------------------------------|
+| id     | int   | layer id                            |
+
+```javascript
+tatami.api.selectLayer(3)
+```
+
+
+### addLayer
+
+Creates new layer
+
+```javascript
+tatami.api.addLayer()
+```
+
+
+### deleteLayer
+
+Removes layer. If now id supplied then currently active layer get removed.
+
+| Param  | Type  | Options                             |
+|--------|-------|-------------------------------------|
+| id     | int   | layer id                            |
+
+```javascript
+tatami.api.deleteLayer()
+```
+
+
+### getLayerModes
+
+Returns array of blending modes that can be used.
+
+```javascript
+tatami.api.getLayerModes()
+```
+
+Output
+```JSON
+['normal', 'screen', 'add', 'overlay', 'darken', 'lighten', 'difference', 'negate', 'multiply', 'exclude', 'hardlight', 'softlight', 'pinlight', 'layerMask']
+```
+
+
+### getLayerImage
+
+Returns image of a layer as blob and base64.
+
+| Param    | Type    | Description                                 |
+|----------|---------|---------------------------------------------|
+| id       | int     | Layer ID (required)                         |
+| fullSize | boolean | When true: returns full size image (png), or jpg thumbnail. |
+
+```javascript
+tatami.api.getLayerImage(1, false)
+```
+
+
+### duplicateLayer
+
+Makes copy of currently selected layer
+
+```javascript
+tatami.api.duplicateLayer()
+```
+
+
+### clearAll
+
+Clears layer from all pixels
+
+```javascript
+tatami.api.clearAll()
+```
+
+
+### handleMaskMode
+
+When mask is used it's possible to toggle different visibilities of the mask and image.
+
+| Param    | Type    | Description                                 |
+|----------|---------|---------------------------------------------|
+| mode     | int     | mask mode                                   |
+
+Mask modes explained
+- `0` image hidden, mask hidden
+- `1` image visible, mask visible
+- `2` image visible, mask hidden
+
+```javascript
+tatami.api.handleMaskMode(1)
+```
+
+
+### resetLayerTransform
+
+When layer has been rotated, scaled and so on, this method will reset the matrix as how it was when the image was loaded.
+
+```javascript
+tatami.api.resetLayerTransform()
+```
+
+
+### burnLayerTransform
+
+When layer has been rotated, scaled and so on, this method will apply the changes and burn new version of the layer.
+
+```javascript
+tatami.api.burnLayerTransform()
+```
+
+
+### layerMergeDown
+
+Merges currently selected layer with layer below
+
+```javascript
+tatami.api.layerMergeDown()
+```
+
+
+### layerFlipX
+
+Flips currently selected layer horizontally
+
+```javascript
+tatami.api.layerFlipX()
+```
+
+
+### layerFlipY
+
+Flips currently selected layer vertically
+
+```javascript
+tatami.api.layerFlipY()
+```
+
+
+### layerRotate
+
+Rotates layer
+
+| Param    | Type    | Description                                 |
+|----------|---------|---------------------------------------------|
+| degrees  | int     | how many degress to rotate layer -360..360  |
+
+```javascript
+tatami.api.layerRotate(30)
+```
+
+
+### layerInverseColors
+
+Inverts colors of currently selected layer
+
+```javascript
+tatami.api.layerInverseColors()
+```
+
+
+
+### layerAutoCrop
+
+Performs auto-crop to currently selected layer. So it will find each pixel and makes a crop.
+
+```javascript
+tatami.api.layerAutoCrop()
+```
+
+
+### setGuideVisibility
+
+Used by `handleMaskMode` method.
+
+| Option      | Type    | Description             |
+|-------------|---------|-------------------------|
+| opacity     | float   | Opacity of image        |
+| maskOpacity | float   | Opacity of mask         |
+
+```javascript
+tatami.api.setGuideVisibility({ opacity: 0.0, maskOpacity: 1.0 })
+```
+
+
+### removeGuide
+
+Remove coloring guide or mask if any is being used
+
+```javascript
+tatami.api.removeGuide()
+```
+
+
+### layerScanColors
+
+Performs color analyzer for the currently selected layer
+
+```javascript
+const layerColors = tatami.api.layerScanColors()
+```
+
+
+### layerCenter
+
+Centers currently selected layer
+
+```javascript
+tatami.api.layerCenter()
+```
+
+
+### layerFitSize
+
+Scales currently selected layer to fit inside canvas area
+
+```javascript
+tatami.api.layerFitSize()
+```
+
+
+### layerCoverSize
+
+Scales currently selected layer to cover entire canvas area
+
+```javascript
+tatami.api.layerCoverSize()
+```
+
+
+### toggleLayerLock
+
+Toggles layer lock on/off
+
+| Param  | Type | Description             |
+|--------|------|-------------------------|
+| id     | int  | id of target layer      |
+
+```javascript
+tatami.api.toggleLayerLock(1)
+```
+
+
+### setLayerVisibility
+
+Sets visibility of the layer (hidden or visible)
+
+| Param  | Type    | Description             |
+|--------|---------|-------------------------|
+| id     | int     | id of target layer      |
+| state  | boolean | visible or not          |
+
+```javascript
+tatami.api.setLayerVisibility(1, false)
+```
+
+
+### flattenImage
+
+Merges all layers together
+
+```javascript
+tatami.api.flattenImage()
+```
+
+
+
+## Frame
+
+<Note>
+    Tatami doesn't have actual animation frames at the moment. Our current frame implementation uses layers as frames. The main 
+    difference is that when layers are used as frames, we show only one layer at the time.
+    
+    We see performance issues after having more than 20-30 layers visible simultaneously (depends a lot on resolution as well) 
+    but you can have hundreds of layers without performance issues when only one layer is visible.
+</Note>
+
+### addFrame
+
+Creates a new frame by duplicating the current frame and goes to that frame.
+
+```javascript
+tatami.api.addFrame()
+```
+
+
+### deleteFrame
+
+Deletes the current frame.
+
+```javascript
+tatami.api.deleteFrame()
+```
+
+
+### getFrames
+
+Returns array of frame objects
+
+```javascript
+tatami.api.getFrames()
+```
+
+
+### gotoFrame
+
+Goes to frame index
+
+| Param  | Type | Description             |
+|--------|------|-------------------------|
+| index  | int  | index of target frame   |
+
+```javascript
+tatami.api.gotoFrame(10)
+```
+
+
+### showGhostFrames
+
+Toggles on ghost frames. When this is turned on it will show previous frames with half opacity.
+
+```javascript
+tatami.api.showGhostFrames()
+```
+
+
+### hideGhostFrames
+
+Toggles off ghost frames.
+
+```javascript
+tatami.api.hideGhostFrames()
+```
+
+
+
+### gotoPreviousFrame
+
+Goes to frame previous to the current frame
+
+```javascript
+tatami.api.gotoPreviousFrame()
+```
+
+
+### gotoNextFrame
+
+Goes to frame next to the current frame. If there is no next frame left and loop mode is off (default) then 
+it will create new empty frame in the end.
+
+| Option | Type    | Description                                 |
+|--------|---------|---------------------------------------------|
+| loop   | boolean | Should we loop from last frame to the first |
+
+```javascript
+tatami.api.gotoNextFrame()
+```
+
+If loop mode is turned on and there is no frames left, it will go to the first frame.
+
+```javascript
+tatami.api.gotoNextFrame({ loop: on })
+```
+
+
+### duplicateNextFrame
+
+Creates new frame from of the current frame and goes to that. If loop mode is off (default) it will add new frames in the end.
+
+| Option | Type    | Description                                 |
+|--------|---------|---------------------------------------------|
+| loop   | boolean | Should we loop from last frame to the first |
+
+```javascript
+tatami.api.duplicateNextFrame()
+```
+
+
+### playFrames
+
+Starts playback engine with given frame rate
+
+| Param | Type | Description                      |
+|-------|------|----------------------------------|
+| fps   | int  | Frames per second (default 30)   |
+
+
+## Selection
+
+Selection methods are related to Select tool. These methods create selection programmatically or get pixel data from selected areas.
+
+
+### selectAll
+
+Creates selection from entire canvas area.
+
+```javascript
+tatami.api.selectAll()
+```
+
+
+### clearSelection
+
+Deselect the selection (remove)
+
+```javascript
+tatami.api.clearSelection()
+```
+
+
+### eraseSelection
+
+Removes pixels from selected area.
+
+```javascript
+tatami.api.eraseSelection()
+```
+
+
+### selectionFromAlpha
+
+Finds transparent pixels from current layer and creates selection from them.
+
+```javascript
+tatami.api.selectionFromAlpha()
+```
+
+
+### selectionFromColor
+
+Finds pixels of given colors and creates selection from them
+
+| Param     | Type   | Description                                        |
+|-----------|--------|----------------------------------------------------|
+| color     | string | Color to search for. Hex color code `#0000ff`      |
+| threshold | float  | How precise match target color needs to be. `0..1` |
+| softness  | float  | Softness of selection edges. `0..1`
+
+```javascript
+tatami.api.selectionFromColor(
+    '#0000ff',
+    0.1,
+    0
+)
+```
+
+
+### selectionInvert
+
+Invert selection
+
+```javascript
+tatami.api.selectionInvert()
+```
+
+
+### selectionExists
+
+Returns boolean value, if selection exists or not.
+
+```javascript
+tatami.api.selectionExists()
+```
+
+
+### getSelectionArea
+
+Returns an object with information about currently active selection.
+
+```javascript
+tatami.api.getSelectionArea()
+```
+
+Example output
+
+```JSON
+{
+    height: 151, // height of the selection
+    matrix: [208, 0, 0, 151, 398, 442],
+    maxx: 606, // right edge position
+    maxy: 593, // botto edge position
+    minx: 398, // left edge position
+    miny: 442, // top edge position
+    selection_exists: true,
+    width: 208, // width of the selection
+}
+```
+
+
+### setSelectionArea
+
+Updates currently active selection from new values.
+
+| Param  | Type | Description            |
+|--------|------|------------------------|
+| top    | int  | Top edge coordinate    |
+| right  | int  | Right edge coordinate  |
+| bottom | int  | Bottom edge coordinate |
+| left   | int  | Left edge coordinate   |
+
+```javascript
+tatami.api.setSelectionArea(50, 200, 150, 50)
+```
+
+
+### getSelection
+
+Get selected area as image blob and base64.
+
+| Param  | Type   | Description            |
+|--------|--------|------------------------|
+| format | string | `jpg` or `png`         |
+
+```javascript
+const selectionImage = await tatami.api.getSelection('png')
+const { base64, blob } = selectionImage
+```
+
+
+### getSelectionMask
+
+Promise returns base64 image from given layer, showing selected area as white rectangle against black background.
+
+| Param  | Type   | Description            |
+|--------|--------|------------------------|
+| id     | int    | Layer ID               |
+
+```javascript
+tatami.api.getSelectionMask(tatami.state.selectedLayer)
+    .then((base64) => {
+        console.log(base64)
+    })
+```
+
+
+## Vector
+
+Vector methods are related to Vector tools such as shapes and text
+
+### getForms
+
+Returns object of all vector objects on the current layer. If objects found it returns `false`
+
+```javascript
+tatami.api.getForms()
+```
+
+
+### selectForm
+
+Selects vector object by id.
+
+| Param | Type | Description                  |
+|-------|------|------------------------------|
+| id    | int  | id of targetet vector object |
+
+```javascript
+tatami.api.selectForm(3)
+```
+
+
+### unselectForm
+
+Deselects form is anything is selected
+
+```javascript
+tatami.api.unselectForm()
+```
+
+
+### deleteSelectedForm
+
+Removes selected object from layer
+
+```javascript
+tatami.api.deleteSelectedForm()
+```
+
+
+### copySelectedForm
+
+Copies selected form into Tatami's internal clipboard.
+
+```javascript
+tatami.api.copySelectedForm()
+```
+
+### cutSelectedForm
+
+Copies selected form into Tatami's internal clipboard and then removes it.
+
+```javascript
+tatami.api.cutSelectedForm()
+```
+
+
+### pasteNextClick
+
+### pasteAtCoordinate
+
+Paste object
+
+| Param | Type | Description                                   |
+|-------|------|-----------------------------------------------|
+| x     | int  | screen x coordinate where to place the object |
+| y     | int  | screen y coordinate where to place the object |
+
+```javascript
+tatami.api.pasteAtCoordinate(window.innerWidth / 2, window.innerHeight / 2)
+```
+
+
+## Storage
+
+Tatami Engine has it's own storage and memory. All the assets we want to use must be uploaded to Tatami before they can be used. 
+There is one generic utility script for uploading files into storage called `tatami.utils.loadAsset`. More about that in <a href="/docs/api-reference/utils">Utils</a> section.
+
+### listStorage
+
+List files stored in Tatami's internal storage (which is saved with project file)
+
+```javascript
+tatami.api.listStorage()
+```
+
+
+### getFromStorage
+
+Get file from Tatami storage as a blob.
+
+| Param      | Type      | Description                                  |
+|------------|-----------|----------------------------------------------|
+| pathToFile | string    | SVG image data
+| type       | mime-type | Mime-Type for the blob
+
+```javascript
+// Fetch SVG file
+const file = await tatami.api.getFromStorage('drawing/fonts/Barlow-SemiBold.ttf', 'font/ttf')
+
+```
+
+
+### removeFromStorage
+
+Delete file from storage
+
+| Param      | Type   | Description                                   |
+|------------|--------|-----------------------------------------------|
+| pathToFile | string | Which file should from removed                |
+
+```javascript
+tatami.api.removeFromStorage('drawing/fonts/Barlow-SemiBold.ttf')
+```
+
+
+
+### releaseStores
+
+Reset storage and release all stored files from memory
+
+```javascript
+tatami.api.releaseStores()
+```
+
+
+### putTatamiVars
+
+Create text file into Tatami storage, which can be used for storing variables etc information about the project file. 
+File will have mime-type "plain/text" when stored into Tatami.
+
+| Param    | Type   | Description         |
+|----------|--------|---------------------|
+| filename | string | Filename            |
+| payload  | text   | Text content
+
+```javascript
+tatami.api.putTatamiVars('config.js', "{ foo: 'bar' }")
+```
+
+
+### getTatamiVars
+
+Get's stored text file from Tatami storage.
+
+| Param    | Type   | Description         |
+|----------|--------|---------------------|
+| filename | string | Filename            |
+
+```javascript
+tatami.api.getTatamiVars('config.js')
+```
+
+Output
+```JSON
+"{ foo: 'bar' }"
+```
+

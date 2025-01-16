@@ -1,0 +1,31 @@
+---
+title: Events
+description: Tatami Events you can overwrite
+---
+
+These are easy shortcut events but you can also create event handlers by listening to <a href="/docs/getting-started/listening-to-messages">postMessages from Tatami</a>.
+
+
+| Event                    | Triggers when...
+---------------------------|-----------------------------------------------
+| `onCanvasClicked`        | Canvas is tapped on
+| `onLayersChanged`        | Layer content was updated
+| `onSelectedObjectChanged`| Vector object was selected or unselected
+| `onSelect`               | Selection was created
+| `onUnselect`             | Selection was cleared
+| `onUploadFinished`       | Uploading to Tatami storage finished
+| `onObjectReady`          | 3D object is ready to be used
+| `onLayerSelected`        | Selected layer changed
+| `onRefreshLayerThumbs`   | Tatami internally refreshed layer thumbnails
+| `onHistoryChanged`       | Undo history was pushed with an update
+| `onUndoRedoApplied`      | Undo or Redo was performed
+| `onStorageChanged`       | Files updates inside Tatami's internal storage
+| `onImageColorsScanned`   | Tatami analyzed colors of image
+| `onViewChanged`          | View changed from 2D to 3D or vice versa
+
+```javascript
+tatami.events.onCanvasClicked = () => {
+  console.log('My canvas click handler')
+}
+```
+

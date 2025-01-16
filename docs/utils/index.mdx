@@ -1,0 +1,519 @@
+---
+title: Utils
+description: Tatami API helper scripts
+---
+
+### askForFile
+
+Opens file dialog or camera to get file that would be uploaded to Tatami
+
+| Param   | Type   | Description                                                                  |
+|---------|--------|------------------------------------------------------------------------------|
+| options | object | Optional settings
+| target  | string | Optional target, to instantly load selected file into Tatami with given target
+
+<Note>
+  Target options are fully documented at <a href="/docs/examples/loading-files">Loading files into Tatami</a>
+</Note>
+
+| Option     | Type    | Description                                                                  |
+|------------|---------|------------------------------------------------------------------------------|
+| fromCamera | boolean | Force camera input on mobile devices, instead of asking if camera or library |
+| accept     | string  | List of accepted file extensions, separated by comma. Default: `'.lzma,.sumo,.jpg,.jpeg,.png,.webp'` |
+
+Quick usage
+
+```javascript
+// Open dialog and open image as new layer
+tatami.utils.askForFile(null, 'new-layer')
+```
+
+More advanced usage, if you need to do also something else during file loading
+
+```javascript
+// Specify what files are accepted and process before loading
+tatami.utils.askForFile(
+  {
+    accept: '.svg'
+  },
+).then(async files => {
+  tatami.utils.openSvg(files[0])
+})
+```
+
+Example for loading image from phone camera directly
+
+```javascript
+tatami.utils.askForFile({ fromCamera: true }, 'reset')
+```
+
+
+### blobToBase64
+
+Promise converts blob into base64 string
+
+```javascript
+// Get current Tatami canvas as thumbnail, convert into base64 string
+tatami.api.saveCurrentThumbnail('jpg')
+  .then(blob => {
+    const base64 = tatami.utils.blobToBase64(blob)
+  })
+```
+
+
+### urlToFile
+
+Promise converts URL into file
+
+```javascript
+// Get current Tatami canvas as thumbnail, convert into base64 string
+tatami.api.urlToFile('https://path-to-your-file')
+  .then(file => {
+    tatami.utils.loadAsset({ file })
+  })
+```
+
+
+### srcToArrayBuffer
+
+Promise fetches from URL source and returns payload as ArrayBuffer.
+
+```javascript
+// Get current Tatami canvas as thumbnail, convert into base64 string
+tatami.utils.srcToArrayBuffer('https://path.to.image')
+  .then(arrayData => {
+    const imageData = new Uint8Array(arrayData, 0, arrayData.byteLength)
+  })
+```
+
+
+### loadAsset
+
+Loads file into Tatami.
+
+| Option  | Type   | Description                              |
+|---------|--------|------------------------------------------|
+| src     | string | Any standard URL or base64               |
+| file    | file   | File                                     |
+| target  | string | Tatami upload target (default = 'reset') |
+| options | object | Optional settings                        |
+
+<Note>
+  Target options are fully documented at <a href="/docs/examples/loading-files">Loading files into Tatami</a>
+</Note>
+
+| Option      | Type    | Description                                |
+|-------------|---------|--------------------------------------------|
+| showSpinner | boolean | Should it show spinner while loading file  |
+
+
+
+```javascript
+// Basic usage
+tatami.utils.loadAsset({
+  src: 'https://cdn.sumo.app/images/icon.png',
+  target: 'new-layer'
+})
+
+// Ask for a file and load it as mask, with spinner
+tatami.utils.loadAsset({
+  src: 'https://cdn.sumo.app/tatami/circlemask.png',
+  target: 'mask',
+  options: { showSpinner: true }
+})
+```
+
+
+### createSpinner
+
+Create loading spinner
+
+```javascript
+tatami.utils.createSpinner()
+```
+
+
+### destroySpinner
+
+Destroy loading spinner
+
+```javascript
+tatami.utils.destroySpinner()
+```
+
+
+### openSvg
+
+Converts SVG into bitmap image and loads it as new layer
+
+| Param | Type   | Description                           |
+|-------|--------|---------------------------------------|
+| url   | string | URL to SVG file
+
+```javascript
+tatami.utils.urlToFile('https://cdn.sumo.app/tunes/drums.svg')
+  .then(file => {
+    tatami.utils.openSvg(file)
+  })
+```
+
+
+### setSvgSize
+
+Sets width and height attribute of a SVG image by parsing base64 image data into SVG nodes, modifies 
+nodes and encodes back to base64 SVG data.
+
+| Option | Type   | Description                                  |
+|--------|--------|----------------------------------------------|
+| base64 | string | SVG image data
+| width  | string | Value to be set into SVG's "width" attribute 
+| height | string | Value to be set into SVG's "height" attribute 
+
+```javascript
+// Fetch SVG file
+const file = await tatami.utils.urlToFile('https://cdn.sumo.app/tunes/drums.svg')
+// Set up file reader
+const reader = new FileReader()
+reader.onerror = error => reject(error)
+reader.onloadend = () => {
+  // Set SVG size to 64 x 64
+  const resizedSvg = tatami.utils.setSvgSize({
+    base64: reader.result,
+    width: 64,
+    height: 64,
+  })
+  // Download the result
+  const a = document.createElement('a')
+  a.href = resizedSvg
+  a.download = 'drums-64.svg'
+  a.click()
+}
+reader.readAsDataURL(file)
+```
+
+
+### createNewEmpty
+
+Returns base64 string of a new blank image
+
+| Option | Type   | Description                     |
+|--------|--------|---------------------------------|
+| width  | int    | Paper width in pixels           |
+| height | int    | Paper height in pixels          |
+| bg     | string | Color of the paper in #rrggbb   |
+
+```javascript
+// Create new white Full HD size image
+tatami.utils.createNewEmpty({
+  width: 1920,
+  height: 1080,
+  bg: '#ffffff',
+}).then(base64 => {
+  // Load it as a new project
+  tatami.utils.loadAsset({
+    src: base64,
+    target: 'reset'
+  })
+})
+```
+
+
+### nativeShare
+
+Triggers browser's native sharing modal.
+
+<Note>Requires navigator.share which is not available for most desktop browsers</Note>
+
+| Option | Type   | Description     |
+|--------|--------|-----------------|
+| blob   | blob   | Image as blob   |
+| name   | string | Filename        |
+| type   | string | Mime-Type       |
+
+```javascript
+// Get current canvas as JPG
+tatami.api.saveCurrentImage('jpg')
+  .then(async (blob) => {
+    // Share it
+    await tatami.utils.nativeShare({
+      blob,
+      filename: 'shared-image.jpg',
+      type: blob.type
+    })
+  })
+```
+
+
+
+### getImageSize
+
+Promise returns width and height of given image
+
+| Param | Type   | Description      |
+|-------|--------|------------------|
+| url   | string | URL image source |
+
+```javascript
+// Get current canvas as JPG
+await tatami.utils.getImageSize('https://cdn.sumo.app/images/icon.png')
+```
+
+Output
+
+```JSON
+{ width: 150, height: 150 }
+```
+
+
+### limitImageSize
+
+Promise returns image that has been scaled down according to given maxSize, while maintaining aspect ratio.
+
+| Param   | Type   | Description                             |
+|---------|--------|-----------------------------------------|
+| url     | string | URL image source                        |
+| maxSize | int    | How many pixels the longest side can be |
+
+```javascript
+// Get current canvas as JPG
+await tatami.utils.limitImageSize({
+  url: 'https://cdn.sumo.app/images/icon.png',
+  maxSize: 100
+})
+```
+
+<Note>
+Method is using canvas element for this scaling. Possible CORS issue etc with image URL may result an error 
+about "tainted canvas".
+</Note>
+
+Output
+
+```JSON
+{
+  base64,
+  width: 100,
+  height: 77
+}
+```
+
+
+### preloadImage
+
+Loads image from given url and removes it. Promise resolves as soon as image has been loaded and removed.
+
+| Param | Type   | Description      |
+|-------|--------|------------------|
+| url   | string | URL image source |
+
+```javascript
+// Cache this image
+await tatami.utils.preloadImage('https://cdn.sumo.app/images/icon.png')
+```
+
+
+### webpToPng
+
+Converts Webp image into png. Tatami doesn't support webp images natively.
+
+| Param | Type   | Description      |
+|-------|--------|------------------|
+| url   | string | URL image source |
+
+```javascript
+// Cache this image
+await tatami.utils.webpToPng('https://url-to-image.webp')
+```
+
+
+### colorToHex
+
+Returns hex color from rgb color object, where rgb values are within 0..1 range
+
+```javascript
+tatami.utils.colorToHex({ r: 0, g: 1, b: 1 })
+```
+
+Output
+```JSON
+'#00ffff'
+```
+
+
+### rgbToHex
+
+Returns hex color from rgb color object, where rgb values are within 0..255 range
+
+```javascript
+tatami.utils.rgbToHex({ r: 0, g: 255, b: 255 })
+```
+
+Output
+```JSON
+'#00ffff'
+```
+
+
+### hexToRgb
+
+Returns rgb color object from hex color
+
+```javascript
+tatami.utils.hexToRgb('#00ffff')
+```
+
+Output
+```JSON
+{r: 0, g: 1, b: 1}
+```
+
+
+### hexToRgbArray
+
+Returns rgb color array from hex color. This is Tatami's internal color format btw!
+
+```javascript
+tatami.utils.hexToRgbArray('#00ffff')
+```
+
+Output
+```JSON
+ [0, 1, 1, 1]
+```
+
+
+### hslToRgb
+
+Returns rgb array from HSL color values, where HSL values are within 0..1 range
+
+```javascript
+tatami.utils.hslToRgb(0.5, 0, 0.5)
+```
+
+Output
+```JSON
+[128, 128, 128]
+```
+
+
+### hslToRgbaObj
+
+Returns rgb object from HSL color values, where HSL values are within 0..1 range
+
+```javascript
+tatami.utils.hslToRgbaObj(0.5, 0, 0.5)
+```
+
+Output
+```JSON
+{r: 127, g: 127, b: 127, a: 1}
+```
+
+
+### rgbToHsl
+
+Returns HSL values from RGB values, where RGB values are within 0..255 range
+
+```javascript
+tatami.utils.rgbToHsl(0,255,255)
+```
+
+Output
+```JSON
+[0.5, -1.007905138339921, 127.5]
+```
+
+
+### isHex
+
+Checks if given string is hex color values
+
+```javascript
+tatami.utils.isHex('#00ffff')
+```
+
+
+### copyTextToClipboard
+
+Copies text to OS level clipboard
+
+| Param | Type   | Description          |
+|-------|--------|----------------------|
+| text  | string | Text we want to copy |
+
+```javascript
+await tatami.utils.copyTextToClipboard('Put this to clipboard')
+```
+
+
+### copyBlobToClipboard
+
+Copies blob to OS level clipboard
+
+| Param | Type | Description          |
+|-------|------|----------------------|
+| blob  | blob | blob                 |
+
+```javascript
+tatami.api.saveCurrentImage('jpg')
+  .then(async (blob) => {
+    await tatami.utils.copyBlobToClipboard(blob)
+  })
+```
+
+
+### getClipboardText
+
+Get text from OS level clipboard
+
+```javascript
+const pasteThis = await tatami.utils.getClipboardText(blob)
+```
+
+
+### createPasteListener
+
+Executing this method creates event listener that will paste any image from OS level clipboard into new layer in Tatami
+
+```javascript
+tatami.utils.createPasteListener()
+// Then try to do "copy image" somewhere and hit Cmd-V in Tatami
+```
+
+
+### loadBrushPackage
+
+Loads brush package (.lzma) file and activates it as brush
+
+| Param  | Type   | Description                            |
+|--------|--------|----------------------------------------|
+| url    | string | URL or base64 for brush package file   |
+| blob   | blob   | Brush package file as blob             |
+| base64 | string | Base64 string of a brush package file  |
+
+```javascript
+// Load brush package
+tatami.utils.loadBrushPackage({
+  url: 'https://cdn.sumo.app/brush_packages/multicolor/sunflower.lzma',
+})
+// Because we loaded multicolor brush package, we want to use white brush color 
+// Because brush color modifies the multicolor brushtip image 
+tatami.api.setColor('#ffffff')
+```
+
+
+### loadBrushTip
+
+Loads brush tip image and activates it for current brush tool
+
+| Param  | Type   | Description                            |
+|--------|--------|----------------------------------------|
+| url    | string | URL or base64 for brush package file   |
+| blob   | blob   | Brush package file as blob             |
+| base64 | string | Base64 string of a brush package file  |
+
+```javascript
+tatami.utils.loadBrushTip({ url: 'https://cdn.sumo.app/brushes/basic/cube.png' })
+```
+
+
