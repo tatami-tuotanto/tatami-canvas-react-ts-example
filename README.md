@@ -20,19 +20,14 @@ This project demonstrates how to use Tatami Canvas in a React application with T
 ### Installation
 
 1. Clone the repository
-```bash
-git clone <repository-url>
-cd tatami-react-example
-```
-
 2. Install dependencies
 ```bash
-npm install
+yarn
 ```
 
 3. Start the development server
 ```bash
-npm run dev
+yarn dev
 ```
 
 ## Project Structure
@@ -40,36 +35,24 @@ npm run dev
 - `/src/types/tatami.d.ts` - TypeScript definitions for Tatami Canvas API
 - `/src/components/` - React components for brush controls
 - `/src/App.tsx` - Main application component
-- `/docs/` - Tatami Canvas API documentation
 
 ## Usage
 
-The example demonstrates:
+The example demonstrates basic usage of Tatami Canvas.
 
 ```typescript
-// Initialize Tatami Canvas
-useEffect(() => {
-  window.tatami.api.initCommands()
-}, [])
-
-// Use Tatami Canvas in JSX
 <tatami-canvas
-  paper-width="1024"
-  paper-height="1024"
+  paper-width="1920"
+  paper-height="1080"
   paper-color="#ffffff"
 ></tatami-canvas>
 ```
 
-## Available Controls
-
-- **Brush Size**: Slider to control brush size using Tatami attributes
-- **Color Picker**: Color input to change brush color using Tatami API
-
 ## Built With
 
+- [Tatami Canvas](https://tatami.dev/)
 - [React](https://reactjs.org/)
 - [TypeScript](https://www.typescriptlang.org/)
-- [Tatami Canvas](https://tatami.art/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Vite](https://vitejs.dev/)
 
